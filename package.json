@@ -1,0 +1,62 @@
+{
+  "name": "rollup-plugin-build-git-version",
+  "version": "0.0.1",
+  "description": "A rollup plugin, add git info version.json to dist",
+  "main": "lib/index.js",
+  "module": "lib/index.esm.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "dist",
+    "doc"
+  ],
+  "keywords": [
+    "rollup-plugin",
+    "version"
+  ],
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "watch": "rollup --bundleConfigAsCjs -w -c config/rollup.config.development.js",
+    "compile": "rollup --bundleConfigAsCjs -c config/rollup.config.production.js",
+    "dev": "pnpm type-check && pnpm watch",
+    "build": "pnpm type-check && pnpm compile",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "dayjs": "^1.11.9"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.9",
+    "@babel/preset-env": "^7.22.9",
+    "@rollup/plugin-babel": "^6.0.3",
+    "@rollup/plugin-commonjs": "^25.0.3",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "@rollup/plugin-terser": "^0.4.3",
+    "@rollup/plugin-typescript": "^11.1.2",
+    "@types/node": "^20.4.2",
+    "@typescript-eslint/eslint-plugin": "^5.50.0",
+    "@typescript-eslint/parser": "^6.1.0",
+    "eslint": "^8.45.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-config-standard-with-typescript": "^36.1.0",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-n": "^15.0.0 || ^16.0.0 ",
+    "eslint-plugin-promise": "^6.0.0",
+    "prettier": "^3.0.0",
+    "rollup": "^3.26.3",
+    "rollup-plugin-delete": "^2.0.0",
+    "rollup-plugin-dts": "^5.3.0",
+    "rollup-plugin-typescript2": "^0.35.0",
+    "typescript": "^5.1.6"
+  },
+  "author": {
+    "name": "peritot",
+    "email": "peritotchan@gmail.com"
+  },
+  "homepage": "https://github.com/peritot/rollup-plugin-build-git-version#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peritot/rollup-plugin-build-git-version"
+  },
+  "license": "ISC"
+}
