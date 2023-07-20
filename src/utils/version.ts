@@ -6,6 +6,7 @@ import { dateToStr } from './date';
  */
 export interface Option {
   fileName?: string;
+  timeZone?: string;
   showAuthor?: boolean;
   showMessage?: boolean;
   extra?: object;
@@ -15,8 +16,8 @@ export interface Option {
  * @public
  */
 interface CommitInfo {
-  id: string;
-  time: string;
+  id?: string;
+  time?: string;
   author?: {
     name: string;
     email: string;
@@ -61,7 +62,7 @@ function branchInfo() {
  * get commit info
  */
 function commitInfo(option?: Option) {
-  let commit: CommitInfo | undefined;
+  let commit: CommitInfo = {};
 
   try {
     const id = execSync('git rev-parse HEAD').toString().trim();
@@ -96,7 +97,7 @@ function commitInfo(option?: Option) {
 export function buildGitVersion(option?: Option) {
   let info = {
     build: {
-      time: dateToStr(),
+      time: dateToStr(undefined, option?.timeZone),
     },
     git: {
       branch: branchInfo(),

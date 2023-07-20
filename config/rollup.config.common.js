@@ -12,8 +12,8 @@ const paths = {
 };
 
 const name = 'rollup-plugin-build-git-version';
-const external = [];
-const globals = {};
+const external = ['dayjs', 'dayjs/plugin/utc', 'dayjs/plugin/timezone'];
+const globals = { dayjs: 'dayjs' };
 
 const plugins = [
   resolve(),

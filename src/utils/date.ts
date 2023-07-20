@@ -15,7 +15,7 @@ const tz = 'Asia/Shanghai';
  * @param date
  * @returns
  */
-export const dateToStr = (str?: string): string => {
+export const dateToStr = (str?: string, timezone = tz): string => {
   const date = dayjs(str);
-  return dayjs.tz(date, tz).format('YYYY-MM-DD HH:mm:ss');
+  return dayjs.tz(date, timezone).format('YYYY-MM-DD HH:mm:ss');
 };
