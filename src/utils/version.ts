@@ -105,8 +105,8 @@ export function buildGitVersion(option?: Option) {
     },
   };
 
-  if (Object.prototype.toString.call(option?.extra) === '[object Object]') {
-    info = { ...info, ...this.option.extra };
+  if (option && Object.prototype.toString.call(option?.extra) === '[object Object]') {
+    info = { ...info, ...option.extra };
   }
 
   return info;
