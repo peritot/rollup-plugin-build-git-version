@@ -9,6 +9,9 @@ export interface Option {
   timeZone?: string;
   showAuthor?: boolean;
   showMessage?: boolean;
+  multiRepo?: boolean;
+  repos?: Array<{ name: string; cwd: string }>;
+  cwd?: string;
   extra?: object;
 }
 
@@ -28,17 +31,21 @@ interface CommitInfo {
 /**
  * get branch info
  */
-function branchInfo() {
+function branchInfo(option?: Option) {
   let branch = '';
 
   try {
-    branch = execSync('git rev-parse --abbrev-ref --symbolic-full-name @{u}').toString().trim();
+    branch = execSync('git rev-parse --abbrev-ref --symbolic-full-name @{u}', { cwd: option?.cwd })
+      .toString()
+      .trim();
   } catch {
     //
   }
   if (!branch) {
     try {
-      branch = execSync('git name-rev --name-only HEAD').toString().trim();
+      branch = execSync('git name-rev --name-only HEAD', { cwd: option?.cwd })
+        .toString()
+        .trim();
 
       if (branch) {
         branch = branch.replace(/(^remotes\/)?(origin\/)?(tags\/)?(\^\d*$)?/g, '');
@@ -49,7 +56,9 @@ function branchInfo() {
   }
   if (!branch) {
     try {
-      branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+      branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: option?.cwd })
+        .toString()
+        .trim();
     } catch {
       //
     }
@@ -65,8 +74,12 @@ function commitInfo(option?: Option) {
   let commit: CommitInfo = {};
 
   try {
-    const id = execSync('git rev-parse HEAD').toString().trim();
-    const detail = execSync('git --no-pager log --pretty=format:"%an-----%ae-----%ci-----%s" HEAD -1').toString().trim();
+    const id = execSync('git rev-parse HEAD', { cwd: option?.cwd })
+      .toString()
+      .trim();
+    const detail = execSync('git --no-pager log --pretty=format:"%an-----%ae-----%ci-----%s" HEAD -1', { cwd: option?.cwd })
+      .toString()
+      .trim();
     const [an, ae, ci, s] = detail?.split('-----') || [];
 
     commit = {
@@ -100,10 +113,30 @@ export function buildGitVersion(option?: Option) {
       time: dateToStr(undefined, option?.timeZone),
     },
     git: {
-      branch: branchInfo(),
+      branch: branchInfo(option),
       commit: commitInfo(option),
     },
   };
+
+  // multi repos
+  const { multiRepo = false, repos = [], ...restOption } = option || {};
+  if (multiRepo) {
+    // remove git info
+    Object.assign(info, { git: undefined });
+
+    // repos
+    for (const repo of repos) {
+      if (repo.name && repo.cwd) {
+        Object.assign(restOption, { cwd: repo.cwd });
+        Object.assign(info, {
+          [repo.name]: {
+            branch: branchInfo(restOption),
+            commit: commitInfo(restOption),
+          },
+        });
+      }
+    }
+  }
 
   if (option && Object.prototype.toString.call(option?.extra) === '[object Object]') {
     info = { ...info, ...option.extra };
