@@ -43,6 +43,15 @@ function branchInfo(option?: Option) {
   }
   if (!branch) {
     try {
+      branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: option?.cwd })
+        .toString()
+        .trim();
+    } catch {
+      //
+    }
+  }
+  if (!branch) {
+    try {
       branch = execSync('git name-rev --name-only HEAD', { cwd: option?.cwd })
         .toString()
         .trim();
@@ -50,15 +59,6 @@ function branchInfo(option?: Option) {
       if (branch) {
         branch = branch.replace(/(^remotes\/)?(origin\/)?(tags\/)?(\^\d*$)?/g, '');
       }
-    } catch {
-      //
-    }
-  }
-  if (!branch) {
-    try {
-      branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: option?.cwd })
-        .toString()
-        .trim();
     } catch {
       //
     }

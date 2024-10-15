@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-build-git-version",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "A rollup plugin, add git info version.json to dist",
   "main": "lib/index.js",
   "module": "lib/index.esm.js",
