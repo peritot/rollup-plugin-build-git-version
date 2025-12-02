@@ -8,11 +8,11 @@ import { buildGitVersion, type Option } from './utils';
 function buildGitVersionPlugin(option?: Option): Plugin {
   return {
     name: 'rollup-plugin-build-git-version',
-    buildEnd() {
+    async buildEnd() {
       try {
         const { fileName = 'version.json', ...op } = option || {};
 
-        const info = buildGitVersion(op);
+        const info = await buildGitVersion(op);
         const source = JSON.stringify(info, undefined, 4);
 
         this.emitFile({

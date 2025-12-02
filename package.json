@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-build-git-version",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "A rollup plugin, add git info version.json to dist",
   "main": "lib/index.js",
   "module": "lib/index.esm.js",
@@ -21,7 +21,8 @@
     "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "dayjs": "^1.11.9"
+    "dayjs": "^1.11.9",
+    "simple-git": "^3.30.0"
   },
   "devDependencies": {
     "@babel/core": "^7.22.9",

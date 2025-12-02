@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import simpleGit from 'simple-git';
 import { dateToStr } from './date';
 
 /**
@@ -31,38 +31,34 @@ interface CommitInfo {
 /**
  * get branch info
  */
-function branchInfo(option?: Option) {
+async function branchInfo(option?: Option) {
   let branch = '';
 
   try {
-    branch = execSync('git rev-parse --abbrev-ref --symbolic-full-name @{u}', { cwd: option?.cwd })
-      .toString()
-      .trim();
-  } catch {
-    //
-  }
-  if (!branch) {
-    try {
-      branch = execSync('git rev-parse --abbrev-ref HEAD', { cwd: option?.cwd })
-        .toString()
-        .trim();
-    } catch {
-      //
-    }
-  }
-  if (!branch) {
-    try {
-      branch = execSync('git name-rev --name-only HEAD', { cwd: option?.cwd })
-        .toString()
-        .trim();
+    const git = simpleGit({ baseDir: option?.cwd });
 
-      if (branch) {
-        branch = branch.replace(/(^remotes\/)?(origin\/)?(tags\/)?(\^\d*$)?/g, '');
-      }
-    } catch {
-      //
+    try {
+      const summary = await git.branch();
+      branch = summary?.current || '';
+    } catch {}
+
+    if (!branch) {
+      try {
+        const res = await git.raw(['rev-parse', '--abbrev-ref', 'HEAD']);
+        branch = res.toString().trim();
+      } catch {}
     }
-  }
+
+    if (!branch) {
+      try {
+        const res = await git.raw(['name-rev', '--name-only', 'HEAD']);
+        branch = res.toString().trim();
+        if (branch) {
+          branch = branch.replace(/(^remotes\/)?(origin\/)?(tags\/)?(\^\d*$)?/g, '');
+        }
+      } catch {}
+    }
+  } catch {}
 
   return branch;
 }
@@ -70,34 +66,28 @@ function branchInfo(option?: Option) {
 /**
  * get commit info
  */
-function commitInfo(option?: Option) {
+async function commitInfo(option?: Option) {
   let commit: CommitInfo = {};
 
   try {
-    const id = execSync('git rev-parse HEAD', { cwd: option?.cwd })
-      .toString()
-      .trim();
-    const detail = execSync('git --no-pager log --pretty=format:"%an-----%ae-----%ci-----%s" HEAD -1', { cwd: option?.cwd })
-      .toString()
-      .trim();
-    const [an, ae, ci, s] = detail?.split('-----') || [];
+    const git = simpleGit({ baseDir: option?.cwd });
 
+    const log = await git.log({ maxCount: 1 });
+    const latest = log.latest;
     commit = {
-      id,
-      time: dateToStr(ci),
+      id: latest?.hash || '',
+      time: dateToStr(latest?.date),
     };
     if (option?.showAuthor) {
       commit.author = {
-        name: an,
-        email: ae,
+        name: latest?.author_name || '',
+        email: latest?.author_email || '',
       };
     }
     if (option?.showMessage) {
-      commit.message = s;
+      commit.message = latest?.message;
     }
-  } catch {
-    //
-  }
+  } catch {}
 
   return commit;
 }
@@ -107,14 +97,14 @@ function commitInfo(option?: Option) {
  * @param option
  * @returns
  */
-export function buildGitVersion(option?: Option) {
+export async function buildGitVersion(option?: Option) {
   let info = {
     build: {
       time: dateToStr(undefined, option?.timeZone),
     },
     git: {
-      branch: branchInfo(option),
-      commit: commitInfo(option),
+      branch: await branchInfo(option),
+      commit: await commitInfo(option),
     },
   };
 
@@ -130,8 +120,8 @@ export function buildGitVersion(option?: Option) {
         Object.assign(restOption, { cwd: repo.cwd });
         Object.assign(info, {
           [repo.name]: {
-            branch: branchInfo(restOption),
-            commit: commitInfo(restOption),
+            branch: await branchInfo(restOption),
+            commit: await commitInfo(restOption),
           },
         });
       }
