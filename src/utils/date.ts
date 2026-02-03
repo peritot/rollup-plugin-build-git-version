@@ -6,12 +6,12 @@ dayjs.extend(utc);
 dayjs.extend(timezone);
 
 /**
- * 中国标准时间
+ * timezone
  */
 const tz = 'Asia/Shanghai';
 
 /**
- * 时间格式化
+ * format date to string
  * @param date
  * @returns
  */

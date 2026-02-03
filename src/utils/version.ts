@@ -1,4 +1,4 @@
-import simpleGit from 'simple-git';
+import { execSync } from 'child_process';
 import { dateToStr } from './date';
 
 /**
@@ -29,65 +29,83 @@ interface CommitInfo {
 }
 
 /**
+ * exec command
+ */
+function execCommand(cmd, option?: Option) {
+  try {
+    return execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], cwd: option?.cwd }).trim();
+  } catch {
+    return '';
+  }
+}
+
+/**
  * get branch info
  */
-async function branchInfo(option?: Option) {
-  let branch = '';
+function branchInfo(option?: Option) {
+  // 1. Priority: Attempt to get local branch name via modern command (Git 2.22+) - most accurate and intuitive
+  let branch = execCommand('git branch --show-current', option);
+  if (branch) {
+    return branch;
+  }
 
-  try {
-    const git = simpleGit({ baseDir: option?.cwd });
+  // 2. Attempt to get Tag (if current commit is a Tag, this is usually more important than branch name)
+  branch = execCommand('git describe --tags --exact-match HEAD', option);
+  if (branch) {
+    return branch;
+  }
 
-    try {
-      const summary = await git.branch();
-      branch = summary?.current || '';
-    } catch {}
+  // 3. Attempt to get upstream branch (Common in CI environments, Detached HEAD but has upstream)
+  branch = execCommand('git rev-parse --abbrev-ref --symbolic-full-name @{u}', option);
+  if (branch) {
+    return branch;
+  }
 
-    if (!branch) {
-      try {
-        const res = await git.raw(['rev-parse', '--abbrev-ref', 'HEAD']);
-        branch = res.toString().trim();
-      } catch {}
+  // 4. Attempt symbolic-ref (Compatible with older Git, and can accurately distinguish detached HEAD)
+  branch = execCommand('git symbolic-ref --short HEAD', option);
+  if (branch && !branch.includes('HEAD')) {
+    return branch;
+  }
+
+  // 5. Attempt rev-parse (Standard method, but returns HEAD in detached HEAD state)
+  branch = execCommand('git rev-parse --abbrev-ref HEAD', option);
+  if (branch && !branch.includes('HEAD')) {
+    return branch;
+  }
+
+  // 6. Attempt name-rev (Last resort for Detached HEAD)
+  branch = execCommand('git name-rev --name-only HEAD', option);
+  if (branch) {
+    // Clean up output, e.g., "remotes/origin/main" -> "main"
+    branch = branch.replace(/(^remotes\/)?(origin\/)?(tags\/)?(\^\d*$)?/g, '');
+    if (branch && !branch.includes('undefined')) {
+      return branch;
     }
+  }
 
-    if (!branch) {
-      try {
-        const res = await git.raw(['name-rev', '--name-only', 'HEAD']);
-        branch = res.toString().trim();
-        if (branch) {
-          branch = branch.replace(/(^remotes\/)?(origin\/)?(tags\/)?(\^\d*$)?/g, '');
-        }
-      } catch {}
-    }
-  } catch {}
-
-  return branch;
+  return '';
 }
 
 /**
  * get commit info
  */
-async function commitInfo(option?: Option) {
+function commitInfo(option?: Option) {
   let commit: CommitInfo = {};
 
   try {
-    const git = simpleGit({ baseDir: option?.cwd });
+    const detail = execCommand('git --no-pager log -1 --pretty=format:"%H%x00%an%x00%ae%x00%ci%x00%s" HEAD', option);
+    const [id, an, ae, ci, s] = detail?.split('\0') || [];
 
-    const log = await git.log({ maxCount: 1 });
-    const latest = log.latest;
-    commit = {
-      id: latest?.hash || '',
-      time: dateToStr(latest?.date),
-    };
+    commit = { id, time: dateToStr(ci) };
     if (option?.showAuthor) {
-      commit.author = {
-        name: latest?.author_name || '',
-        email: latest?.author_email || '',
-      };
+      commit.author = { name: an, email: ae };
     }
     if (option?.showMessage) {
-      commit.message = latest?.message;
+      commit.message = s;
     }
-  } catch {}
+  } catch {
+    //
+  }
 
   return commit;
 }
@@ -97,14 +115,14 @@ async function commitInfo(option?: Option) {
  * @param option
  * @returns
  */
-export async function buildGitVersion(option?: Option) {
+export function buildGitVersion(option?: Option) {
   let info = {
     build: {
       time: dateToStr(undefined, option?.timeZone),
     },
     git: {
-      branch: await branchInfo(option),
-      commit: await commitInfo(option),
+      branch: branchInfo(option),
+      commit: commitInfo(option),
     },
   };
 
@@ -120,8 +138,8 @@ export async function buildGitVersion(option?: Option) {
         Object.assign(restOption, { cwd: repo.cwd });
         Object.assign(info, {
           [repo.name]: {
-            branch: await branchInfo(restOption),
-            commit: await commitInfo(restOption),
+            branch: branchInfo(restOption),
+            commit: commitInfo(restOption),
           },
         });
       }
